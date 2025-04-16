@@ -1,3 +1,3 @@
 ﻿
-using var game = new Fishing_game.Game1();
+using var game = new FishingGame.Game1();
 game.Run();

@@ -1,8 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
-namespace Fishing_game
+namespace FishingGame
 {
     public class Game1 : Game
     {
@@ -13,7 +14,11 @@ namespace Fishing_game
         private GraphicsDevice _device;
         private SpriteFont _font;
         private int _fishCounter = 0;
-        private bool _fishHooked = false;
+        private bool _fishBites = false;
+        private Random _randomiser = new Random();
+        private float _biteTimer = 0;
+        private float _biteInterval = 0;
+        //private float _catchTimer = 0;
 
         public Game1()
         {
@@ -34,6 +39,8 @@ namespace Fishing_game
             base.Initialize();
         }
 
+
+
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
@@ -41,15 +48,33 @@ namespace Fishing_game
 
             // TODO: use this.Content to load your game content here
             _font = Content.Load<SpriteFont>("myFont");
+            _biteInterval = (float)_randomiser.Next(3, 11);
+
         }
 
         private void ProcessKeyboard()
         {
             KeyboardState kbState = Keyboard.GetState();
 
-            if (kbState.IsKeyDown(Keys.Space))
+            if (_fishBites == true)
             {
-                _fishCounter++;
+                if (kbState.IsKeyDown(Keys.Space))
+                {
+                    _fishCounter++;
+                    _fishBites = false;
+                    _biteTimer = 0;
+                    _biteInterval = _randomiser.Next(2, 6);
+                }
+            }
+        }
+
+        private void FishBiteTimer(GameTime gameTime)
+        {
+            _biteTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (_biteTimer > _biteInterval)
+            {
+                _fishBites = true;
             }
         }
 
@@ -59,6 +84,10 @@ namespace Fishing_game
                 Exit();
 
             // TODO: Add your update logic here
+
+            FishBiteTimer(gameTime);
+
+
             ProcessKeyboard();
 
             base.Update(gameTime);
@@ -79,6 +108,11 @@ namespace Fishing_game
         private void DrawText()
         {
             _spriteBatch.DrawString(_font, "Fish caught: " + _fishCounter.ToString(), new Vector2(20,45), Color.White);
+            _spriteBatch.DrawString(_font, _biteInterval.ToString(), new Vector2(20, 95), Color.White);
+            if (_fishBites == true)
+            {
+                _spriteBatch.DrawString(_font, "Fish hooked!", new Vector2(20, 70), Color.White);
+            }
         }
     }
 }
