@@ -15,10 +15,15 @@ namespace FishingGame
         private SpriteFont _font;
         private int _fishCounter = 0;
         private bool _fishBites = false;
+        private bool _fishingRodCast = false;
         private Random _randomiser = new Random();
-        private float _biteTimer = 0;
-        private float _biteInterval = 0;
-        //private float _catchTimer = 0;
+        private float _biteTimer;
+        private float _biteInterval;
+        private float _catchTimer;
+        private float _catchTimerLimit = 2;
+
+        private KeyboardState _currentKbState;
+        private KeyboardState _previousKbState;
 
         public Game1()
         {
@@ -39,8 +44,6 @@ namespace FishingGame
             base.Initialize();
         }
 
-
-
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
@@ -48,33 +51,59 @@ namespace FishingGame
 
             // TODO: use this.Content to load your game content here
             _font = Content.Load<SpriteFont>("myFont");
-            _biteInterval = (float)_randomiser.Next(3, 11);
-
+            _biteInterval = (float)_randomiser.Next(2, 6);
         }
 
-        private void ProcessKeyboard()
+        private bool IsKeyPressed (Keys key)
         {
-            KeyboardState kbState = Keyboard.GetState();
+            return _currentKbState.IsKeyDown(key) && !_previousKbState.IsKeyDown(key);
+        }
 
-            if (_fishBites == true)
-            {
-                if (kbState.IsKeyDown(Keys.Space))
-                {
-                    _fishCounter++;
-                    _fishBites = false;
-                    _biteTimer = 0;
-                    _biteInterval = _randomiser.Next(2, 6);
-                }
-            }
+        private void ResetFish()
+        {
+            _fishBites = false;
+            _fishingRodCast = false;
+            _biteTimer = 0;
+            _biteInterval = _randomiser.Next(2, 6);
         }
 
         private void FishBiteTimer(GameTime gameTime)
         {
-            _biteTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+            _previousKbState = _currentKbState;
+            _currentKbState = Keyboard.GetState();
 
-            if (_biteTimer > _biteInterval)
+            if (!_fishingRodCast && IsKeyPressed(Keys.Space))
             {
-                _fishBites = true;
+                _fishingRodCast = true;
+            }
+
+            if (_fishingRodCast)
+            {
+                _biteTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+                if (!_fishBites)
+                {
+                    if (_biteTimer > _biteInterval)
+                    {
+                        _fishBites = true;
+                        _catchTimer = _catchTimerLimit;
+                    }
+                }
+                else
+                {
+                    _catchTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+                    if (IsKeyPressed(Keys.Space))
+                    {
+                        _fishCounter++;
+                        ResetFish();
+                    }
+
+                    if (_catchTimer <= 0)
+                    {
+                        ResetFish();
+                    }
+                }
             }
         }
 
@@ -86,9 +115,6 @@ namespace FishingGame
             // TODO: Add your update logic here
 
             FishBiteTimer(gameTime);
-
-
-            ProcessKeyboard();
 
             base.Update(gameTime);
         }
@@ -108,10 +134,14 @@ namespace FishingGame
         private void DrawText()
         {
             _spriteBatch.DrawString(_font, "Fish caught: " + _fishCounter.ToString(), new Vector2(20,45), Color.White);
-            _spriteBatch.DrawString(_font, _biteInterval.ToString(), new Vector2(20, 95), Color.White);
-            if (_fishBites == true)
+            _spriteBatch.DrawString(_font, "Time until fish bites: " + _biteInterval.ToString(), new Vector2(20, 280), Color.White);
+            if (!_fishingRodCast)
             {
-                _spriteBatch.DrawString(_font, "Fish hooked!", new Vector2(20, 70), Color.White);
+                _spriteBatch.DrawString(_font, "Press Space to cast your fishing rod.", new Vector2(20, 105), Color.White);
+            }
+            else if (_fishBites)
+            {
+                _spriteBatch.DrawString(_font, "Fish hooked! Press Space to catch it.", new Vector2(20, 105), Color.White);
             }
         }
     }
