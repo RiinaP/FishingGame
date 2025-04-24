@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System.IO;
+using System.Text.Json;
 
 namespace FishingGame
 {
@@ -13,9 +15,14 @@ namespace FishingGame
         public Texture2D Texture;
     }
 
+    public class SaveData
+    {
+        public Dictionary<string, int> CatchList { get; set; } = new();
+        public int Points { get; set; } = 0;
+    }
+
     public class Game1 : Game
     {
-
         // Properties
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
@@ -26,6 +33,7 @@ namespace FishingGame
         private bool _fishBites = false;
         private bool _fishingRodCast = false;
         private bool _fishEscaped = false;
+
         private Random _randomiser = new Random();
         private float _biteTimer;
         private float _biteInterval;
@@ -35,6 +43,11 @@ namespace FishingGame
         private Fish? _caughtFish;
         private Fish? _nextFish;
         private List<Fish> _fishTypes = new List<Fish>();
+
+        private Dictionary<string, int> _catchList = new Dictionary<string, int>();
+        private bool _showCatchList = false;
+
+        private const string SaveFilePath = "catch_list.json";
 
         private KeyboardState _currentKbState;
         private KeyboardState _previousKbState;
@@ -54,6 +67,7 @@ namespace FishingGame
             _graphics.IsFullScreen = false;
             _graphics.ApplyChanges();
             Window.Title = "Fishing Game";
+            LoadGame();
 
             base.Initialize();
         }
@@ -81,6 +95,7 @@ namespace FishingGame
 
         private bool IsKeyPressed (Keys key)
         {
+            // Makes sure each key fires only once when pressed
             return _currentKbState.IsKeyDown(key) && !_previousKbState.IsKeyDown(key);
         }
 
@@ -93,10 +108,68 @@ namespace FishingGame
             _nextFish = _fishTypes[_randomiser.Next(_fishTypes.Count)];
         }
 
-        private void FishBiteTimer(GameTime gameTime)
+        private void ResetStats()
+        {
+            _catchList.Clear();
+            _fishPoints = 0;
+            SaveGame();
+        }
+
+        private void SaveGame()
+        {
+            try
+            {
+                var saveData = new SaveData
+                {
+                    CatchList = _catchList,
+                    Points = _fishPoints
+                };
+                string json = JsonSerializer.Serialize(saveData);
+                File.WriteAllText(SaveFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving game: {ex.Message}");
+            }
+        }
+
+        private void LoadGame()
+        {
+            try
+            {
+                if (File.Exists(SaveFilePath))
+                {
+                    string json = File.ReadAllText(SaveFilePath);
+                    var saveData = JsonSerializer.Deserialize<SaveData>(json);
+                    if (saveData != null)
+                    {
+                        _catchList = saveData.CatchList;
+                        _fishPoints = saveData.Points;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading game: {ex.Message}");
+                _catchList = new Dictionary<string, int>();
+                _fishPoints = 0;
+            }
+        }
+
+        private void CatchFish(GameTime gameTime)
         {
             _previousKbState = _currentKbState;
             _currentKbState = Keyboard.GetState();
+
+            if (IsKeyPressed(Keys.Tab))
+            {
+                _showCatchList = !_showCatchList;
+            }
+
+            if (IsKeyPressed(Keys.R))
+            {
+                ResetStats();
+            }
 
             if (!_fishingRodCast && IsKeyPressed(Keys.Space))
             {
@@ -125,6 +198,18 @@ namespace FishingGame
                     {
                         _caughtFish = _nextFish;
                         _fishPoints += _caughtFish.Value.Points;
+
+                        string name = _caughtFish.Value.Name;
+                        if (_catchList.ContainsKey(name))
+                        {
+                            _catchList[name]++;
+                        }
+                        else
+                        {
+                            _catchList[name] = 1;
+                        }
+
+                        SaveGame();
                         ResetFish();
                     }
 
@@ -144,7 +229,7 @@ namespace FishingGame
 
             // TODO: Add your update logic here
 
-            FishBiteTimer(gameTime);
+            CatchFish(gameTime);
 
             base.Update(gameTime);
         }
@@ -183,6 +268,18 @@ namespace FishingGame
             if (_caughtFish.HasValue)
             {
                 _spriteBatch.DrawString(_font, $"You caught a {_caughtFish.Value.Name}!", new Vector2(20, 125), Color.White);
+            }
+
+            if (_showCatchList)
+            {
+                int yOffset = 10;
+                _spriteBatch.DrawString(_font, "Fish caught:", new Vector2(300, yOffset), Color.White);
+                yOffset += 30;
+                foreach (var i in _catchList)
+                {
+                    _spriteBatch.DrawString(_font, $"{i.Key}: {i.Value}", new Vector2(300, yOffset), Color.White);
+                    yOffset += 20;
+                }
             }
         }
     }
