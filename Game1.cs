@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace FishingGame
 {
-    public struct Fish
+    public class Fish
     {
         public string Name;
         public int Points;
@@ -40,8 +40,8 @@ namespace FishingGame
         private float _catchTimer;
         private float _catchTimerLimit = 2;
 
-        private Fish? _caughtFish;
-        private Fish? _nextFish;
+        private Fish _caughtFish;
+        private Fish _nextFish;
         private List<Fish> _fishTypes = new List<Fish>();
 
         private Dictionary<string, int> _catchList = new Dictionary<string, int>();
@@ -90,6 +90,7 @@ namespace FishingGame
                 new Fish {Name = "Tin Can", Points = 0}
             };
 
+            // Initialises the randomisers at start
             ResetFish();
         }
 
@@ -110,6 +111,7 @@ namespace FishingGame
 
         private void ResetStats()
         {
+            // Resets the save file
             _catchList.Clear();
             _fishPoints = 0;
             SaveGame();
@@ -173,6 +175,7 @@ namespace FishingGame
 
             if (!_fishingRodCast && IsKeyPressed(Keys.Space))
             {
+                // Casts the fishing rod to start fishing and clears the "fish got away" message
                 _fishingRodCast = true;
                 _fishEscaped = false;
                 _caughtFish = null;
@@ -180,8 +183,11 @@ namespace FishingGame
 
             if (_fishingRodCast)
             {
+                // Starts the timer to see when the fish will bite
                 _biteTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
+                // The fish bites once the timer reaches a randomised number
+                // Sets the 2 second timer for catching the fish
                 if (!_fishBites)
                 {
                     if (_biteTimer > _biteInterval)
@@ -192,14 +198,17 @@ namespace FishingGame
                 }
                 else
                 {
+                    // Starts the 2 second timer during which the fish must be caught
                     _catchTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
 
+                    // Chooses a previously randomised fish from the list and
+                    // adds it to another list that is displayed to the player
                     if (IsKeyPressed(Keys.Space))
                     {
                         _caughtFish = _nextFish;
-                        _fishPoints += _caughtFish.Value.Points;
+                        _fishPoints += _caughtFish.Points;
 
-                        string name = _caughtFish.Value.Name;
+                        string name = _caughtFish.Name;
                         if (_catchList.ContainsKey(name))
                         {
                             _catchList[name]++;
@@ -213,6 +222,8 @@ namespace FishingGame
                         ResetFish();
                     }
 
+                    // If the fish isn't caught in two seconds,
+                    // displays the "fish got away" message
                     if (_catchTimer <= 0)
                     {
                         ResetFish();
@@ -229,6 +240,7 @@ namespace FishingGame
 
             // TODO: Add your update logic here
 
+            // Creates the gameplay loop for catching fish
             CatchFish(gameTime);
 
             base.Update(gameTime);
@@ -248,6 +260,7 @@ namespace FishingGame
 
         private void DrawText()
         {
+            // These two are displayed for testing purposes
             _spriteBatch.DrawString(_font, $"Points: {_fishPoints}", new Vector2(20,45), Color.White);
             _spriteBatch.DrawString(_font, $"Time until fish bites: {_biteInterval}", new Vector2(20, 450), Color.White);
 
@@ -265,13 +278,14 @@ namespace FishingGame
                 _spriteBatch.DrawString(_font, "Fish hooked! Press Space to catch it.", new Vector2(20, 105), Color.White);
             }
 
-            if (_caughtFish.HasValue)
+            if (_caughtFish != null)
             {
-                _spriteBatch.DrawString(_font, $"You caught a {_caughtFish.Value.Name}!", new Vector2(20, 125), Color.White);
+                _spriteBatch.DrawString(_font, $"You caught a {_caughtFish.Name}!", new Vector2(20, 125), Color.White);
             }
 
             if (_showCatchList)
             {
+                // Shows the list of caught fish when the player presses Tab
                 int yOffset = 10;
                 _spriteBatch.DrawString(_font, "Fish caught:", new Vector2(300, yOffset), Color.White);
                 yOffset += 30;
