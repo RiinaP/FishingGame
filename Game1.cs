@@ -29,6 +29,18 @@ namespace FishingGame
         private GraphicsDevice _device;
         private SpriteFont _font;
 
+        private Texture2D _bgTexture;
+        private Texture2D _frog1Texture;
+        private Texture2D _frog2Texture;
+        private Texture2D _exclamationTexture;
+        private Texture2D _boardTexture;
+        private Texture2D _rTexture;
+        private Texture2D _tabTexture;
+        private Texture2D _spaceTexture;
+
+        private Vector2 _frogPosition;
+
+
         private int _fishPoints = 0;
         private bool _fishBites = false;
         private bool _fishingRodCast = false;
@@ -62,11 +74,12 @@ namespace FishingGame
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            _graphics.PreferredBackBufferWidth = 500;
+            _graphics.PreferredBackBufferWidth = 800;
             _graphics.PreferredBackBufferHeight = 500;
             _graphics.IsFullScreen = false;
             _graphics.ApplyChanges();
             Window.Title = "Fishing Game";
+            _frogPosition = new Vector2 (427, 363);
             LoadGame();
 
             base.Initialize();
@@ -78,16 +91,21 @@ namespace FishingGame
             _device = _graphics.GraphicsDevice;
 
             // TODO: use this.Content to load your game content here
+            _bgTexture = Content.Load<Texture2D>("background");
+            _frog1Texture = Content.Load<Texture2D>("frog1");
+            _frog2Texture = Content.Load<Texture2D>("frog2");
+            _exclamationTexture = Content.Load<Texture2D>("exclamation");
+            _boardTexture = Content.Load<Texture2D>("board");
+            _rTexture = Content.Load<Texture2D>("r");
+            _tabTexture = Content.Load<Texture2D>("tab");
+            _spaceTexture = Content.Load<Texture2D>("space");
             _font = Content.Load<SpriteFont>("myFont");
 
             _fishTypes = new List<Fish>
             {
-                new Fish {Name = "Salmon", Points = 10},
-                new Fish {Name = "Pike", Points = 8},
-                new Fish {Name = "Trout", Points = 5},
-                new Fish {Name = "Perch", Points = 3},
-                new Fish {Name = "Bream", Points = 1},
-                new Fish {Name = "Tin Can", Points = 0}
+                new Fish {Name = "Flounder", Points = 8, Texture = Content.Load<Texture2D>("flounder")},
+                new Fish {Name = "Perch", Points = 3, Texture = Content.Load<Texture2D>("perch")},
+                new Fish {Name = "Tin Can", Points = 1, Texture = Content.Load<Texture2D>("tincan")}
             };
 
             // Initialises the randomisers at start
@@ -107,6 +125,7 @@ namespace FishingGame
             _biteTimer = 0;
             _biteInterval = _randomiser.Next(2, 6);
             _nextFish = _fishTypes[_randomiser.Next(_fishTypes.Count)];
+            // Exlamation mark off
         }
 
         private void ResetStats()
@@ -183,22 +202,23 @@ namespace FishingGame
 
             if (_fishingRodCast)
             {
-                // Starts the timer to see when the fish will bite
+                // Starts the first timer to see when the fish will bite
                 _biteTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-                // The fish bites once the timer reaches a randomised number
-                // Sets the 2 second timer for catching the fish
+                // The fish bites once the first timer reaches a randomised number
+                // Sets the second timer during which the fish must be caught
                 if (!_fishBites)
                 {
                     if (_biteTimer > _biteInterval)
                     {
                         _fishBites = true;
                         _catchTimer = _catchTimerLimit;
+                        // Exlamation mark on
                     }
                 }
                 else
                 {
-                    // Starts the 2 second timer during which the fish must be caught
+                    // Starts the second timer
                     _catchTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
 
                     // Chooses a previously randomised fish from the list and
@@ -222,7 +242,7 @@ namespace FishingGame
                         ResetFish();
                     }
 
-                    // If the fish isn't caught in two seconds,
+                    // If the fish isn't caught in time,
                     // displays the "fish got away" message
                     if (_catchTimer <= 0)
                     {
@@ -252,46 +272,57 @@ namespace FishingGame
 
             // TODO: Add your drawing code here
             _spriteBatch.Begin();
+            DrawGraphics();
             DrawText();
             _spriteBatch.End();
 
             base.Draw(gameTime);
         }
 
+        private void DrawGraphics()
+        {
+            Rectangle screenRectangle = new Rectangle(0, 0, 800, 500);
+            _spriteBatch.Draw(_bgTexture, screenRectangle, Color.White);
+            _spriteBatch.Draw(_frog1Texture, _frogPosition, Color.White);
+            // Draw keyboard icons
+            // Draw board and fishes when applicable
+            // Draw exclamation mark when applicable
+        }
+
         private void DrawText()
         {
-            // These two are displayed for testing purposes
-            _spriteBatch.DrawString(_font, $"Points: {_fishPoints}", new Vector2(20,45), Color.White);
-            _spriteBatch.DrawString(_font, $"Time until fish bites: {_biteInterval}", new Vector2(20, 450), Color.White);
-
             if (_fishEscaped)
             {
-                _spriteBatch.DrawString(_font, "The fish got away!", new Vector2(20, 85), Color.White);
+                //_spriteBatch.DrawString(_font, "The fish got away!", new Vector2(20, 85), Color.White);
             }
 
             if (!_fishingRodCast)
             {
-                _spriteBatch.DrawString(_font, "Press Space to cast your fishing rod.", new Vector2(20, 105), Color.White);
+                //_spriteBatch.DrawString(_font, "Press Space to cast your fishing rod.", new Vector2(20, 105), Color.White);
             }
             else if (_fishBites)
             {
-                _spriteBatch.DrawString(_font, "Fish hooked! Press Space to catch it.", new Vector2(20, 105), Color.White);
+                //_spriteBatch.DrawString(_font, "Fish hooked! Press Space to catch it.", new Vector2(20, 105), Color.White);
+                _spriteBatch.Draw(_exclamationTexture, new Vector2 (420, 255), Color.White);
+                _spriteBatch.Draw(_frog2Texture, _frogPosition, Color.White);
             }
 
             if (_caughtFish != null)
             {
-                _spriteBatch.DrawString(_font, $"You caught a {_caughtFish.Name}!", new Vector2(20, 125), Color.White);
+                //_spriteBatch.DrawString(_font, $"You caught a {_caughtFish.Name}!", new Vector2(20, 125), Color.White);
             }
 
             if (_showCatchList)
             {
                 // Shows the list of caught fish when the player presses Tab
-                int yOffset = 10;
-                _spriteBatch.DrawString(_font, "Fish caught:", new Vector2(300, yOffset), Color.White);
+                _spriteBatch.Draw(_boardTexture, new Vector2(5, -145), Color.White);
+
+                int yOffset = 100;
+                _spriteBatch.DrawString(_font, "Fish caught:", new Vector2(370, yOffset), Color.SaddleBrown);
                 yOffset += 30;
                 foreach (var i in _catchList)
                 {
-                    _spriteBatch.DrawString(_font, $"{i.Key}: {i.Value}", new Vector2(300, yOffset), Color.White);
+                    _spriteBatch.DrawString(_font, $"{i.Key}: {i.Value}", new Vector2(230, yOffset), Color.SaddleBrown);
                     yOffset += 20;
                 }
             }
