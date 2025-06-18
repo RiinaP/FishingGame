@@ -26,7 +26,6 @@ namespace FishingGame
         // Properties
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        private GraphicsDevice _device;
         private SpriteFont _font;
 
         private Texture2D _bgTexture;
@@ -34,12 +33,8 @@ namespace FishingGame
         private Texture2D _frog2Texture;
         private Texture2D _exclamationTexture;
         private Texture2D _boardTexture;
-        private Texture2D _rTexture;
-        private Texture2D _tabTexture;
-        private Texture2D _spaceTexture;
 
         private Vector2 _frogPosition;
-
 
         private int _fishPoints = 0;
         private bool _fishBites = false;
@@ -73,13 +68,12 @@ namespace FishingGame
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
             _graphics.PreferredBackBufferWidth = 800;
             _graphics.PreferredBackBufferHeight = 500;
             _graphics.IsFullScreen = false;
             _graphics.ApplyChanges();
             Window.Title = "Fishing Game";
-            _frogPosition = new Vector2 (427, 363);
+            _frogPosition = new Vector2(427, 363);
             LoadGame();
 
             base.Initialize();
@@ -88,19 +82,16 @@ namespace FishingGame
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            _device = _graphics.GraphicsDevice;
 
-            // TODO: use this.Content to load your game content here
+            // Loads textures
             _bgTexture = Content.Load<Texture2D>("background");
             _frog1Texture = Content.Load<Texture2D>("frog1");
             _frog2Texture = Content.Load<Texture2D>("frog2");
             _exclamationTexture = Content.Load<Texture2D>("exclamation");
             _boardTexture = Content.Load<Texture2D>("board");
-            _rTexture = Content.Load<Texture2D>("r");
-            _tabTexture = Content.Load<Texture2D>("tab");
-            _spaceTexture = Content.Load<Texture2D>("space");
             _font = Content.Load<SpriteFont>("myFont");
 
+            // Sets up fish types and loads textures
             _fishTypes = new List<Fish>
             {
                 new Fish {Name = "Flounder", Points = 8, Texture = Content.Load<Texture2D>("flounder")},
@@ -112,7 +103,7 @@ namespace FishingGame
             ResetFish();
         }
 
-        private bool IsKeyPressed (Keys key)
+        private bool IsKeyPressed(Keys key)
         {
             // Makes sure each key fires only once when pressed
             return _currentKbState.IsKeyDown(key) && !_previousKbState.IsKeyDown(key);
@@ -120,17 +111,17 @@ namespace FishingGame
 
         private void ResetFish()
         {
+            // Sets everything up for the next fish to be caught
             _fishBites = false;
             _fishingRodCast = false;
             _biteTimer = 0;
             _biteInterval = _randomiser.Next(2, 6);
             _nextFish = _fishTypes[_randomiser.Next(_fishTypes.Count)];
-            // Exlamation mark off
         }
 
         private void ResetStats()
         {
-            // Resets the save file
+            // Resets all progress
             _catchList.Clear();
             _fishPoints = 0;
             SaveGame();
@@ -138,6 +129,7 @@ namespace FishingGame
 
         private void SaveGame()
         {
+            // Saves all progress to a json file
             try
             {
                 var saveData = new SaveData
@@ -156,6 +148,7 @@ namespace FishingGame
 
         private void LoadGame()
         {
+            // If save data can be found, loads the contents
             try
             {
                 if (File.Exists(SaveFilePath))
@@ -213,7 +206,6 @@ namespace FishingGame
                     {
                         _fishBites = true;
                         _catchTimer = _catchTimerLimit;
-                        // Exlamation mark on
                     }
                 }
                 else
@@ -221,8 +213,8 @@ namespace FishingGame
                     // Starts the second timer
                     _catchTimer -= (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-                    // Chooses a previously randomised fish from the list and
-                    // adds it to another list that is displayed to the player
+                    // Chooses a previously randomised fish from the _fishTypes list and
+                    // adds it to a list that is displayed to the player
                     if (IsKeyPressed(Keys.Space))
                     {
                         _caughtFish = _nextFish;
@@ -258,8 +250,6 @@ namespace FishingGame
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
-
             // Creates the gameplay loop for catching fish
             CatchFish(gameTime);
 
@@ -270,46 +260,43 @@ namespace FishingGame
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            // TODO: Add your drawing code here
+            // Draws the graphics to the screen
             _spriteBatch.Begin();
+            DrawScenery();
             DrawGraphics();
-            DrawText();
             _spriteBatch.End();
 
             base.Draw(gameTime);
         }
 
-        private void DrawGraphics()
+        private void DrawScenery()
         {
             Rectangle screenRectangle = new Rectangle(0, 0, 800, 500);
             _spriteBatch.Draw(_bgTexture, screenRectangle, Color.White);
             _spriteBatch.Draw(_frog1Texture, _frogPosition, Color.White);
-            // Draw keyboard icons
-            // Draw board and fishes when applicable
-            // Draw exclamation mark when applicable
         }
 
-        private void DrawText()
+        private void DrawGraphics()
         {
             if (_fishEscaped)
             {
-                //_spriteBatch.DrawString(_font, "The fish got away!", new Vector2(20, 85), Color.White);
+                _spriteBatch.DrawString(_font, "The fish got away !", new Vector2(20, 5), Color.SaddleBrown);
             }
 
             if (!_fishingRodCast)
             {
-                //_spriteBatch.DrawString(_font, "Press Space to cast your fishing rod.", new Vector2(20, 105), Color.White);
+                //_spriteBatch.DrawString(_font, "Press Space to cast your fishing rod.", new Vector2(20, 5), Color.SaddleBrown);
             }
             else if (_fishBites)
             {
                 //_spriteBatch.DrawString(_font, "Fish hooked! Press Space to catch it.", new Vector2(20, 105), Color.White);
-                _spriteBatch.Draw(_exclamationTexture, new Vector2 (420, 255), Color.White);
+                _spriteBatch.Draw(_exclamationTexture, new Vector2(420, 255), Color.White);
                 _spriteBatch.Draw(_frog2Texture, _frogPosition, Color.White);
             }
 
             if (_caughtFish != null)
             {
-                //_spriteBatch.DrawString(_font, $"You caught a {_caughtFish.Name}!", new Vector2(20, 125), Color.White);
+                _spriteBatch.DrawString(_font, $"You caught a {_caughtFish.Name}!", new Vector2(20, 5), Color.SaddleBrown);
             }
 
             if (_showCatchList)
@@ -320,10 +307,16 @@ namespace FishingGame
                 int yOffset = 100;
                 _spriteBatch.DrawString(_font, "Fish caught:", new Vector2(370, yOffset), Color.SaddleBrown);
                 yOffset += 30;
+
                 foreach (var i in _catchList)
                 {
-                    _spriteBatch.DrawString(_font, $"{i.Key}: {i.Value}", new Vector2(230, yOffset), Color.SaddleBrown);
-                    yOffset += 20;
+                    Fish fish = _fishTypes.Find(f => f.Name == i.Key);
+                    if (fish != null && fish.Texture != null)
+                    {
+                        _spriteBatch.Draw(fish.Texture, new Vector2(240, yOffset), Color.White);
+                        _spriteBatch.DrawString(_font, $"x{i.Value}", new Vector2(300, yOffset + 8), Color.SaddleBrown);
+                        yOffset += 60;
+                    }
                 }
             }
         }
